@@ -1,0 +1,90 @@
+
+local UserInputService = game:GetService("UserInputService")
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local flying = false
+local speed = 50
+local bodyVelocity
+local bodyGyro
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player.PlayerGui
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 200, 0, 50)
+button.Position = UDim2.new(0.5, -100, 0.9, -25)
+button.Text = "Ativar Voo"
+button.Parent = screenGui
+
+local function startFlying()
+    if not flying then
+        flying = true
+
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Parent = character:WaitForChild("HumanoidRootPart")
+
+        bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(100000, 100000, 100000)
+        bodyGyro.CFrame = character:WaitForChild("HumanoidRootPart").CFrame
+        bodyGyro.Parent = character:WaitForChild("HumanoidRootPart")
+    end
+end
+
+-- Função para parar o voo
+local function stopFlying()
+    if flying then
+        flying = false
+        if bodyVelocity then
+            bodyVelocity:Destroy()
+        end
+        if bodyGyro then
+            bodyGyro:Destroy()
+        end
+    end
+end
+
+local function updateFlying()
+    if flying then
+        local moveDirection = Vector3.new()
+
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            moveDirection = moveDirection + character.HumanoidRootPart.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            moveDirection = moveDirection - character.HumanoidRootPart.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            moveDirection = moveDirection - character.HumanoidRootPart.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            moveDirection = moveDirection + character.HumanoidRootPart.CFrame.RightVector
+        end
+
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            moveDirection = moveDirection + Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            moveDirection = moveDirection - Vector3.new(0, 1, 0)
+        end
+
+        bodyVelocity.Velocity = moveDirection.Unit * speed
+        bodyGyro.CFrame = character.HumanoidRootPart.CFrame
+    end
+end
+
+button.MouseButton1Click:Connect(function()
+    if flying then
+        stopFlying()
+        button.Text = "Ativar Voo"
+    else
+        startFlying()
+        button.Text = "Desativar Voo"
+    end
+end)
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    updateFlying()
+end)
