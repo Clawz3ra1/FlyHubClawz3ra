@@ -1,3 +1,4 @@
+-- Script de voo profissional com UI aprimorada
 
 local UserInputService = game:GetService("UserInputService")
 local player = game.Players.LocalPlayer
@@ -5,9 +6,11 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local flying = false
 local speed = 50
-local bodyVelocity
+local bodyPosition
 local bodyGyro
+local mouse = player:GetMouse()
 
+-- Criar a UI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player.PlayerGui
 
@@ -15,19 +18,31 @@ local button = Instance.new("TextButton")
 button.Size = UDim2.new(0, 200, 0, 50)
 button.Position = UDim2.new(0.5, -100, 0.9, -25)
 button.Text = "Ativar Voo"
+button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Fundo preto
+button.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Texto branco
+button.BorderSizePixel = 4  -- Tamanho da borda
+button.BorderColor3 = Color3.fromRGB(255, 0, 0)  -- Cor da borda vermelha
 button.Parent = screenGui
 
+-- Função para iniciar o voo
 local function startFlying()
     if not flying then
         flying = true
+        button.Text = "Desativar Voo"
+        button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Fundo preto
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Texto branco
+        button.BorderColor3 = Color3.fromRGB(0, 255, 0)  -- Borda verde para indicar voo ativado
 
-        bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.Parent = character:WaitForChild("HumanoidRootPart")
-
+        -- Criar BodyPosition para mover o personagem
+        bodyPosition = Instance.new("BodyPosition")
+        bodyPosition.MaxForce = Vector3.new(400000, 400000, 400000)
+        bodyPosition.D = 10  -- Damping (Resistência ao movimento)
+        bodyPosition.P = 10000  -- Potência de movimento
+        bodyPosition.Parent = character:WaitForChild("HumanoidRootPart")
+        
+        -- Criar BodyGyro para manter o personagem na direção correta
         bodyGyro = Instance.new("BodyGyro")
-        bodyGyro.MaxTorque = Vector3.new(100000, 100000, 100000)
+        bodyGyro.MaxTorque = Vector3.new(400000, 400000, 400000)
         bodyGyro.CFrame = character:WaitForChild("HumanoidRootPart").CFrame
         bodyGyro.Parent = character:WaitForChild("HumanoidRootPart")
     end
@@ -37,8 +52,13 @@ end
 local function stopFlying()
     if flying then
         flying = false
-        if bodyVelocity then
-            bodyVelocity:Destroy()
+        button.Text = "Ativar Voo"
+        button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Fundo preto
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Texto branco
+        button.BorderColor3 = Color3.fromRGB(255, 0, 0)  -- Borda vermelha para indicar voo desativado
+
+        if bodyPosition then
+            bodyPosition:Destroy()
         end
         if bodyGyro then
             bodyGyro:Destroy()
@@ -46,10 +66,12 @@ local function stopFlying()
     end
 end
 
+-- Função para atualizar a direção do voo
 local function updateFlying()
     if flying then
         local moveDirection = Vector3.new()
 
+        -- Direção do movimento com as teclas WASD
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then
             moveDirection = moveDirection + character.HumanoidRootPart.CFrame.LookVector
         end
@@ -63,6 +85,7 @@ local function updateFlying()
             moveDirection = moveDirection + character.HumanoidRootPart.CFrame.RightVector
         end
 
+        -- Movimento para cima e para baixo com a tecla espaço e shift
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
             moveDirection = moveDirection + Vector3.new(0, 1, 0)
         end
@@ -70,18 +93,18 @@ local function updateFlying()
             moveDirection = moveDirection - Vector3.new(0, 1, 0)
         end
 
-        bodyVelocity.Velocity = moveDirection.Unit * speed
-        bodyGyro.CFrame = character.HumanoidRootPart.CFrame
+        -- Aplicando a direção e velocidade no BodyPosition
+        bodyPosition.Position = character.HumanoidRootPart.Position + moveDirection.Unit * speed
+        bodyGyro.CFrame = CFrame.new(character.HumanoidRootPart.Position, mouse.Hit.p)
     end
 end
 
+-- Detectar clique no botão para ativar/desativar o voo
 button.MouseButton1Click:Connect(function()
     if flying then
         stopFlying()
-        button.Text = "Ativar Voo"
     else
         startFlying()
-        button.Text = "Desativar Voo"
     end
 end)
 
